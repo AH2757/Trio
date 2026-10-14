@@ -4,6 +4,8 @@ import AccuChekKit
 import CGMBLEKit
 import CGMBLEKitUI
 import DanaKit
+import EquilPumpKit
+import EquilPumpKitUI
 import EversenseKit
 import Foundation
 import G7SensorKit
@@ -42,6 +44,7 @@ enum DeviceManufacturer: CaseIterable {
     case insulet
     case medtronic
     case medtrum
+    case microtech
     case roche
     case senseonics
     case sooil
@@ -56,6 +59,7 @@ enum DeviceManufacturer: CaseIterable {
         case .insulet: return "Insulet"
         case .medtronic: return "Medtronic"
         case .medtrum: return "Medtrum"
+        case .microtech: return "Microtech"
         case .roche: return "Roche"
         case .senseonics: return "Senseonics"
         case .sooil: return "SOOIL"
@@ -426,6 +430,16 @@ extension DeviceCatalog {
             supportedModels: ["200U", "300U"],
             icon: .managerBundle(asset: "nano200"),
             basalCapability: BasalRateCapability(supportedRates: MedtrumPumpManager.onboardingSupportedBasalRates),
+            reportsRewindEvents: false
+        ),
+        // Microtech Equil patch pump. No artwork yet, so the row falls back to its category glyph; the patch
+        // form factor has no reservoir to rewind. Basal bounds come from the driver's own 0.01 U/h grid.
+        PumpCatalogEntry(
+            EquilPumpManager.self,
+            manufacturer: .microtech,
+            name: "Equil",
+            icon: .none,
+            basalCapability: BasalRateCapability(supportedRates: EquilPumpManager.onboardingSupportedBasalRates),
             reportsRewindEvents: false
         ),
         PumpCatalogEntry(

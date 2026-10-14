@@ -1,4 +1,5 @@
 import DanaKit
+import EquilPumpKit
 import Foundation
 import LoopKitUI
 import MachO
@@ -222,12 +223,14 @@ import UIKit
                 DeviceCatalog.pumps.filter { $0.icon == .none }.map(\.name)
         )
         // Libre 1/2/2+: LibreTransmitterUI ships no asset catalog. Libre 3: LibreLoopUI ships only onboarding
-        // steps. G5: CGMBLEKitUI ships only "g6". xDrip4iOS never had artwork.
+        // steps. G5: CGMBLEKitUI ships only "g6". xDrip4iOS never had artwork. Equil: EquilPumpKitUI ships no
+        // asset catalog yet, so the picker falls back to the category glyph.
         #expect(gapNames == [
             "FreeStyle Libre 1 / 2 / 2+",
             "FreeStyle Libre 3 / 3+ (Beta)",
             "Dexcom G5",
-            "xDrip4iOS"
+            "xDrip4iOS",
+            "Equil"
         ])
     }
 }
@@ -256,7 +259,9 @@ import UIKit
             "MiniMed": BasalRateCapability(minimum: 0.05, maximum: 35, step: 0.05),
             // Dana delivers in 0.01 steps; Trio previously offered 0.05.
             "Dana": BasalRateCapability(minimum: 0.01, maximum: 3, step: 0.01),
-            "Medtrum Nano": BasalRateCapability(minimum: 0.05, maximum: 30, step: 0.05)
+            "Medtrum Nano": BasalRateCapability(minimum: 0.05, maximum: 30, step: 0.05),
+            // Equil delivers in 0.01 steps with a 20 U/h ceiling (the driver's default maxBasal).
+            "Equil": BasalRateCapability(minimum: 0.01, maximum: 20, step: 0.01)
         ]
         for (name, capability) in expected {
             let entry = DeviceCatalog.pumps.first { $0.name == name }
@@ -271,7 +276,8 @@ import UIKit
             "Omnipod": OmniPumpManager.onboardingSupportedBasalRates,
             "MiniMed": MinimedPumpManager.onboardingSupportedBasalRates,
             "Dana": DanaKitPumpManager.onboardingSupportedBasalRates,
-            "Medtrum Nano": MedtrumPumpManager.onboardingSupportedBasalRates
+            "Medtrum Nano": MedtrumPumpManager.onboardingSupportedBasalRates,
+            "Equil": EquilPumpManager.onboardingSupportedBasalRates
         ]
         for (name, grid) in grids {
             #expect(BasalRateCapability.isUniform(grid), "\(name) onboarding grid is not evenly spaced")
@@ -291,7 +297,7 @@ import UIKit
 
     @Test("Only tubed pumps report a rewind") func testRewindReporting() {
         // rewindResetsAutosens is only meaningful for pumps with a reservoir to rewind.
-        let expected = ["Omnipod": false, "MiniMed": true, "Dana": true, "Medtrum Nano": false]
+        let expected = ["Omnipod": false, "MiniMed": true, "Dana": true, "Medtrum Nano": false, "Equil": false]
         for (name, reports) in expected {
             let entry = DeviceCatalog.pumps.first { $0.name == name }
             #expect(entry?.reportsRewindEvents == reports, "\(name) rewind behaviour changed")

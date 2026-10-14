@@ -20,6 +20,9 @@
       location = "group:MedtrumKit/MedtrumKit.xcodeproj">
    </FileRef>
    <FileRef
+      location = "group:EquilPumpKit.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "group:RileyLinkKit/RileyLinkKit.xcodeproj">
    </FileRef>
    <FileRef

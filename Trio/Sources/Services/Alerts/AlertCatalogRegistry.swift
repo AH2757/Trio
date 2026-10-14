@@ -14,7 +14,7 @@ import LoopKit
 /// construction and don't need a catalog entry.
 enum AlertCatalogRegistry {
     static let entries: [Alert.CatalogEntry] =
-        omniEntries + minimedEntries + danaEntries + medtrumEntries + libreLoopEntries + trioAlgorithmEntries
+        omniEntries + minimedEntries + danaEntries + medtrumEntries + equilEntries + libreLoopEntries + trioAlgorithmEntries
 
     static func lookup(_ identifier: Alert.Identifier) -> Alert.CatalogEntry? {
         if let exact = entries.first(where: { $0.identifier == identifier }) {
@@ -181,6 +181,22 @@ private extension AlertCatalogRegistry {
             "Reservoir",
             .reservoirLow
         )
+    ]
+}
+
+// MARK: - Equil (Microtech patch pump)
+
+private extension AlertCatalogRegistry {
+    /// Manager identifier matches `EquilPumpManager.pluginIdentifier` / `EquilAlert.managerIdentifier`;
+    /// alert identifiers come from `EquilAlert.alertIdentifier`. Occlusion and power loss are the act-now
+    /// events and escalate to critical; reservoir/battery lows stay time-sensitive so they remain snoozeable.
+    static let equilEntries: [Alert.CatalogEntry] = [
+        addEntry("Equil", "equil.low-reservoir", .timeSensitive, "Reservoir Low", "Reservoir", .reservoirLow),
+        addEntry("Equil", "equil.low-battery", .timeSensitive, "Pump Battery Low", "Battery", .pumpBatteryLow),
+        addEntry("Equil", "equil.occlusion", .critical, "Occlusion", "Delivery", .occlusion),
+        addEntry("Equil", "equil.pushrod-rewind", .active, "Pushrod Rewound", "Hardware", .hardwareFault),
+        addEntry("Equil", "equil.power-loss", .critical, "Pump Power Loss", "Hardware", .hardwareFault),
+        addEntry("Equil", "equil.fault", .critical, "Pump Alert", "Hardware", .hardwareFault)
     ]
 }
 

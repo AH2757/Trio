@@ -34,6 +34,9 @@ import Testing
             ("Medtrum", "com.nightscout.medtrumkit.patch-occlusion"), // single-s (future MedtrumKit)
             ("Medtrum", "com.nightscout.medtrumkit.patch-fault"),
             ("Medtrum", "com.nightscout.medtrumkit.patch-empty"),
+            ("Equil", "equil.occlusion"),
+            ("Equil", "equil.power-loss"),
+            ("Equil", "equil.fault"),
             ("trio.aps", "loop.notActive")
         ]
     ) func criticalEntries(manager: String, alertID: String) {
@@ -51,6 +54,8 @@ import Testing
             ("Dana", "unknown"),
             ("Medtrum", "com.nightscout.medtrumkit.reservoir-low"),
             ("Medtrum", "com.nightscout.medtrumkit.patch-daily-limit"),
+            ("Equil", "equil.low-reservoir"),
+            ("Equil", "equil.low-battery"),
             ("LibreLoopCGMManager", "sensorExpiry.warning24h"),
             ("LibreLoopCGMManager", "reconnectNeedsReScan"),
             // No LibreLoop alert is .critical: a sensor ending or needing a
@@ -72,6 +77,7 @@ import Testing
             ("Omni", "userPodExpiration"),
             ("Dana", "basalCompare"),
             ("Medtrum", "com.nightscout.medtrumkit.patch-expired"),
+            ("Equil", "equil.pushrod-rewind"),
             ("trio.aps", "algorithmError")
         ]
     ) func activeEntries(manager: String, alertID: String) {

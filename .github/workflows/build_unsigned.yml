@@ -1,0 +1,100 @@
+name: 5. Build Unsigned IPA (Free Apple ID)
+run-name: Build unsigned IPA (${{ github.ref_name }})
+
+# Produces an UNSIGNED .ipa for people without a paid Apple Developer account.
+#
+# The archive step runs with code signing completely disabled, so this workflow
+# needs no Apple secrets at all. You sign the resulting .ipa on your own Windows
+# PC with a free Apple ID (SideStore or Sideloadly). No Mac required.
+#
+# Caveats of the free Apple ID route (see docs/12-免费账号侧载操作手册.md):
+#   - the app expires after 7 days and must be re-signed
+#   - the App Group entitlement is stripped, so the Watch app, Live Activity and
+#     the xDrip CGM source do not work; the pump/CGM loop itself does not use it
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build unsigned IPA
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - name: Select Xcode version
+        run: sudo xcode-select --switch /Applications/Xcode_26.5.app/Contents/Developer
+
+      - name: Checkout Repo
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Configure unsigned build
+        run: |
+          # Config.xcconfig ends with an optional #include of ConfigOverride.xcconfig,
+          # so anything written here wins. The key is DEVELOPER_TEAM (not
+          # DEVELOPMENT_TEAM): BUNDLE_IDENTIFIER = org.nightscout.$(DEVELOPMENT_TEAM).trio
+          # is expanded from it, and a non-substituted value would leave the literal
+          # "##TEAM_ID##" in the bundle id, which is not a valid identifier.
+          cat > ConfigOverride.xcconfig <<'EOF'
+          DEVELOPER_TEAM = EQUILFREE1
+          SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) DEV_BRANCH_WARNING_DISABLED
+          EOF
+
+      - name: Show build configuration
+        run: |
+          cat ConfigOverride.xcconfig
+          xcodebuild -list -workspace Trio.xcworkspace || true
+
+      - name: Archive (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild \
+            -workspace Trio.xcworkspace \
+            -scheme Trio \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$PWD/build/Trio.xcarchive" \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            archive 2>&1 | tee build.log
+
+      - name: Package IPA
+        run: |
+          set -euo pipefail
+          OUT="$PWD/build"
+          cd "$OUT/Trio.xcarchive/Products/Applications"
+          echo "App bundle: $(ls -d *.app)"
+          echo "--- embedded Watch ---"
+          ls -R Trio.app/Watch 2>/dev/null || echo "(none)"
+          echo "--- embedded PlugIns ---"
+          ls Trio.app/PlugIns 2>/dev/null || echo "(none)"
+          plutil -p "Trio.app/Info.plist" | grep -E 'CFBundleIdentifier|CFBundleShortVersionString|CFBundleVersion' || true
+
+          # Each embedded bundle (Watch app, app extensions) needs its own
+          # provisioning profile, which free-Apple-ID signing tools handle poorly.
+          # Build three variants so the user can pick the one that signs cleanly.
+          build_ipa() {
+            name="$1"; shift
+            rm -rf Payload
+            mkdir -p Payload
+            cp -R Trio.app Payload/
+            "$@"
+            zip -qry "$OUT/$name.ipa" Payload
+            echo "built $name.ipa"
+          }
+
+          build_ipa Trio-unsigned-full        true
+          build_ipa Trio-unsigned-nowatch     rm -rf Payload/Trio.app/Watch
+          build_ipa Trio-unsigned-free        rm -rf Payload/Trio.app/Watch Payload/Trio.app/PlugIns
+
+          ls -lh "$OUT"/*.ipa
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: trio-unsigned-ipa
+          path: |
+            build/*.ipa
+            build.log
